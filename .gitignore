@@ -1,0 +1,46 @@
+# Python
+backend/.venv/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.production
+
+# Env
+.env
+.env.local
+
+# Zip artifacts
+backend_upload.zip
+frontend_upload.zip
+frontend_upload/
+
+# Test images
+test1.jpg
+test2.jpg
+test3.jpg
+
+# Zone map images
+zone_map.jpg
+缩放区域示意图.jpg
+缩放区域示意图(详细版).jpg
+Example.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Claude Code
+.claude/
