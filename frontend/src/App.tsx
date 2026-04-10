@@ -155,7 +155,7 @@ export default function App() {
       </div>
 
       {/* ── Two-panel layout ── */}
-      <main className="max-w-4xl mx-auto px-5 py-7 pb-14 flex gap-5 items-start">
+      <main className="max-w-4xl mx-auto px-4 py-5 pb-12 md:px-5 md:py-7 md:pb-14 flex flex-col md:flex-row gap-4 md:gap-5 items-start">
 
         {/* ── Left panel ── */}
         <div className="flex-1 rounded-2xl overflow-hidden"
@@ -245,7 +245,7 @@ export default function App() {
               <h2 className="text-sm font-semibold text-gray-700">处理结果</h2>
             </div>
 
-            <div className="px-5 pb-5 min-h-72 flex flex-col">
+            <div className="px-5 pb-5 min-h-48 md:min-h-72 flex flex-col">
               <AnimatePresence mode="wait">
 
                 {/* Placeholder */}

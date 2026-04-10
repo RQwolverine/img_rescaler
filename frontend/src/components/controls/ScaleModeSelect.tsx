@@ -18,7 +18,7 @@ export function ScaleModeSelect({ value, onChange }: Props) {
         <button
           key={opt.value}
           onClick={() => onChange(opt.value)}
-          className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all
+          className={`flex-1 text-xs font-medium py-2 rounded-md transition-all
             ${value === opt.value
               ? 'bg-[#1aad6d] text-white shadow-sm'
               : 'text-gray-500 hover:text-gray-700'}`}

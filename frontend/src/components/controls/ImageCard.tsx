@@ -30,7 +30,7 @@ export function ImageCard({ file, index, onUpdate, onRemove }: Props) {
         />
         <button
           onClick={() => onRemove(file.id)}
-          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/40 text-white
+          className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full bg-black/40 text-white
             text-xs flex items-center justify-center hover:bg-black/60 transition-colors leading-none"
         >
           ✕
@@ -55,7 +55,7 @@ export function ImageCard({ file, index, onUpdate, onRemove }: Props) {
               value={file.ratio}
               onChange={(e) => onUpdate(file.id, { ratio: e.target.value })}
               placeholder="如 1.5"
-              className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5
+              className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-2
                 focus:outline-none focus:ring-2 focus:ring-[#1aad6d]/30 focus:border-[#1aad6d]"
             />
           </div>
@@ -71,7 +71,7 @@ export function ImageCard({ file, index, onUpdate, onRemove }: Props) {
                 value={file.targetCm}
                 onChange={(e) => onUpdate(file.id, { targetCm: e.target.value })}
                 placeholder="cm"
-                className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-1.5
+                className="flex-1 text-xs border border-gray-200 rounded-lg px-2 py-2
                   focus:outline-none focus:ring-2 focus:ring-[#1aad6d]/30 focus:border-[#1aad6d]"
               />
               <span className="text-xs text-gray-400">cm</span>

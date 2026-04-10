@@ -56,7 +56,7 @@ export function DownloadCard({ result, index }: Props) {
         {result.status === 'ok' && (
           <motion.button
             onClick={handleDownload}
-            className="w-full py-1.5 rounded-lg bg-[#1aad6d] text-white text-xs font-medium
+            className="w-full py-2 rounded-lg bg-[#1aad6d] text-white text-xs font-medium
               hover:bg-[#158f5a] transition-colors mt-0.5"
             whileTap={{ scale: 0.97 }}
           >

@@ -20,7 +20,7 @@ export function DropZone({ onFiles }: DropZoneProps) {
   return (
     <motion.div
       className={`w-full rounded-xl border-2 border-dashed cursor-pointer transition-all
-        flex flex-col items-center justify-center gap-3 py-14 px-8
+        flex flex-col items-center justify-center gap-3 py-8 md:py-14 px-5 md:px-8
         ${dragging
           ? 'border-[#1aad6d] bg-[#f0fdf7]'
           : 'border-gray-300 bg-gray-50 hover:border-[#1aad6d] hover:bg-[#f0fdf7]'}`}
