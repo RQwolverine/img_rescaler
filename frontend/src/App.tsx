@@ -60,6 +60,7 @@ function fileToImageFile(file: File): ImageFile {
     file,
     previewUrl: URL.createObjectURL(file),
     scaleMode: 'by_height',
+    rulerType: 'ruler1',
     targetCm: '',
     ratio: '1.0',
   }

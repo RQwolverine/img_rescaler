@@ -1,10 +1,12 @@
 export type ScaleMode = 'by_height' | 'by_width' | 'by_ratio'
+export type RulerType = 'ruler1' | 'ruler2'
 
 export interface ImageFile {
   id: string
   file: File
   previewUrl: string
   scaleMode: ScaleMode
+  rulerType: RulerType
   targetCm: string   // string to allow empty input
   ratio: string
 }

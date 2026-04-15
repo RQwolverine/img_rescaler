@@ -15,6 +15,7 @@ export async function processImages(files: ImageFile[]): Promise<ProcessingRespo
   const configs = files.map((f) => ({
     filename: f.file.name,
     scale_mode: f.scaleMode,
+    ruler_type: f.rulerType,
     target_cm: f.scaleMode !== 'by_ratio' ? parseFloat(f.targetCm) : null,
     ratio: f.scaleMode === 'by_ratio' ? parseFloat(f.ratio) : null,
   }))

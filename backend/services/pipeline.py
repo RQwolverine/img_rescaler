@@ -8,7 +8,7 @@ import cv2
 from PIL import Image
 import io
 
-from .ruler_detector import detect_ruler, RulerCalibration
+from .ruler_detector import detect_ruler, detect_ruler_v2, RulerCalibration
 from .content_detector import detect_top_art, TopArtBounds
 from .scaler import scale_and_compose
 from models.schemas import ImageConfig, ProcessingResultItem, TopArtDimensions
@@ -26,8 +26,11 @@ def process_image(image_bytes: bytes, config: ImageConfig) -> ProcessingResultIt
         # Decode image bytes to numpy BGR array
         img = _decode_image(image_bytes)
 
-        # Step 1: Detect ruler calibration
-        cal = detect_ruler(img)
+        # Step 1: Detect ruler calibration (method depends on ruler type)
+        if config.ruler_type == "ruler2":
+            cal = detect_ruler_v2(img)
+        else:
+            cal = detect_ruler(img)
         warnings.extend(cal.warnings)
 
         # Step 2: Detect top art bounding box

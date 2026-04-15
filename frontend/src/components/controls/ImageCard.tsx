@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import type { ImageFile, ScaleMode } from '../../types/image'
+import type { ImageFile, RulerType, ScaleMode } from '../../types/image'
 import { ScaleModeSelect } from './ScaleModeSelect'
 
 interface Props {
@@ -8,6 +8,11 @@ interface Props {
   onUpdate: (id: string, patch: Partial<ImageFile>) => void
   onRemove: (id: string) => void
 }
+
+const RULER_OPTIONS: { value: RulerType; label: string }[] = [
+  { value: 'ruler1', label: '设计尺1' },
+  { value: 'ruler2', label: '设计尺2' },
+]
 
 export function ImageCard({ file, index, onUpdate, onRemove }: Props) {
   const isRatio = file.scaleMode === 'by_ratio'
@@ -40,6 +45,22 @@ export function ImageCard({ file, index, onUpdate, onRemove }: Props) {
       {/* Controls */}
       <div className="p-2.5 flex flex-col gap-2">
         <p className="text-xs text-gray-500 truncate">{file.file.name}</p>
+
+        {/* Ruler type selector */}
+        <div className="flex gap-1 rounded-lg bg-gray-100 p-0.5">
+          {RULER_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => onUpdate(file.id, { rulerType: opt.value })}
+              className={`flex-1 text-xs font-medium py-1.5 rounded-md transition-all
+                ${file.rulerType === opt.value
+                  ? 'bg-[#6366f1] text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
 
         <ScaleModeSelect
           value={file.scaleMode}

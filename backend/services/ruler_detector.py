@@ -22,6 +22,147 @@ class RulerCalibration:
     warnings: list[str]
 
 
+def detect_ruler_v2(img: np.ndarray) -> RulerCalibration:
+    """
+    Detect ruler calibration for ruler type 2 (设计尺2).
+
+    In ruler type 2, numbers are printed on the OUTSIDE of the ruler strip
+    (above for the top ruler, to the left for the left ruler), and tick marks
+    face INWARD toward the content area.  A clear black border line separates
+    the ruler strip from the content area.
+
+    The px/cm calibration uses the same tick-detection logic as ruler type 1.
+    The content boundary is found by detecting the last prominent dark
+    row/column in the ruler strip area (the black border line).
+    """
+    warnings: list[str] = []
+    h, w = img.shape[:2]
+
+    top_strip_h = max(40, int(h * 0.05))
+    left_strip_w = max(40, int(w * 0.05))
+
+    px_per_cm_x, _ = _detect_axis(
+        img, axis="horizontal",
+        strip_size=top_strip_h,
+        warnings=warnings,
+    )
+    # Use a larger min_distance for the left (vertical) ruler:
+    # In ruler type 2, number characters create broad bimodal peaks in the
+    # row projection that require a wider skip window to avoid re-detection.
+    px_per_cm_y, _ = _detect_axis(
+        img, axis="vertical",
+        strip_size=left_strip_w,
+        warnings=warnings,
+        min_distance=50,
+    )
+
+    diff_ratio = abs(px_per_cm_x - px_per_cm_y) / max(px_per_cm_x, px_per_cm_y)
+    if diff_ratio > 0.15:
+        warnings.append(
+            f"Horizontal ({px_per_cm_x:.1f}) and vertical ({px_per_cm_y:.1f}) "
+            f"px/cm differ by {diff_ratio*100:.1f}% — image may be non-uniformly scanned."
+        )
+
+    px_per_cm = (px_per_cm_x + px_per_cm_y) / 2.0
+
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+    # For ruler type 2, the content boundary is the black border line at
+    # the inner edge of the ruler strip.
+    search_y = max(80, int(h * 0.08))
+    search_x = max(80, int(w * 0.08))
+
+    ruler_origin_y = _find_border_line_v2(gray, axis="vertical", search_limit=search_y)
+    ruler_origin_x = _find_border_line_v2(gray, axis="horizontal", search_limit=search_x)
+
+    return RulerCalibration(
+        px_per_cm_x=px_per_cm_x,
+        px_per_cm_y=px_per_cm_y,
+        px_per_cm=px_per_cm,
+        ruler_origin_x=ruler_origin_x,
+        ruler_origin_y=ruler_origin_y,
+        warnings=warnings,
+    )
+
+
+def _find_border_line_v2(
+    gray: np.ndarray,
+    axis: str,
+    search_limit: int,
+    dark_threshold: int = 128,
+    border_min_coverage: float = 0.50,
+) -> int:
+    """
+    For ruler type 2: find the inner boundary of the ruler strip.
+
+    Detects the prominent black border line at the inner edge of the ruler.
+    The border line is a continuous horizontal/vertical dark line that covers
+    a large fraction of the image width/height, unlike tick marks (which only
+    create sparse column/row projections) or content (lower coverage).
+
+    Strategy:
+    1. Find the row/column with the MAXIMUM dark pixel density.
+    2. If that maximum exceeds border_min_coverage of the dimension length,
+       treat it as the border line; return the row/column right after the
+       contiguous cluster of high-density rows/columns.
+    3. Otherwise fall back to the last row/column with any dark pixels.
+
+    axis="vertical":   scan rows downward in the top strip → ruler_origin_y
+    axis="horizontal": scan columns rightward in left strip → ruler_origin_x
+    """
+    h, w = gray.shape
+
+    if axis == "vertical":
+        # Skip the leftmost columns to avoid the vertical border of the left ruler.
+        skip_cols = min(int(w * 0.06), 70)
+        usable_w = w - skip_cols
+        limit = min(search_limit, h)
+
+        dark_per_row = np.array(
+            [int((gray[r, skip_cols:] < dark_threshold).sum()) for r in range(limit)],
+            dtype=float,
+        )
+
+        max_dark = dark_per_row.max() if len(dark_per_row) > 0 else 0.0
+        border_threshold = max(usable_w * border_min_coverage, max_dark * 0.50)
+
+        # Find contiguous cluster of rows that form the border line.
+        strong = np.where(dark_per_row >= border_threshold)[0]
+        if len(strong) > 0:
+            return int(strong[-1]) + 1  # first row after the border line
+
+        # Fallback: last row with any dark pixels
+        any_dark = np.where(dark_per_row >= 3)[0]
+        if len(any_dark) > 0:
+            return int(any_dark[-1]) + 1
+
+        return search_limit
+
+    else:  # axis == "horizontal"
+        # Skip the topmost rows to avoid the horizontal border of the top ruler.
+        skip_rows = min(int(h * 0.05), 50)
+        usable_h = h - skip_rows
+        limit = min(search_limit, w)
+
+        dark_per_col = np.array(
+            [int((gray[skip_rows:, c] < dark_threshold).sum()) for c in range(limit)],
+            dtype=float,
+        )
+
+        max_dark = dark_per_col.max() if len(dark_per_col) > 0 else 0.0
+        border_threshold = max(usable_h * border_min_coverage, max_dark * 0.50)
+
+        strong = np.where(dark_per_col >= border_threshold)[0]
+        if len(strong) > 0:
+            return int(strong[-1]) + 1
+
+        any_dark = np.where(dark_per_col >= 3)[0]
+        if len(any_dark) > 0:
+            return int(any_dark[-1]) + 1
+
+        return search_limit
+
+
 def detect_ruler(img: np.ndarray) -> RulerCalibration:
     """
     Detect ruler calibration from an A4 image with top and left ruler strips.
@@ -134,10 +275,15 @@ def _detect_axis(
     axis: str,
     strip_size: int,
     warnings: list[str],
+    min_distance: int = 15,
 ) -> tuple[float, float]:
     """
     Detect major tick marks along one ruler axis.
     Returns (px_per_cm, origin_px) via linear regression on major ticks.
+
+    min_distance: minimum pixel separation between detected peaks.
+    Increase for ruler type 2's vertical axis (left ruler) where number
+    characters create broad bimodal peaks that need larger separation.
     """
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -153,7 +299,7 @@ def _detect_axis(
         axis_label = "vertical"
 
     # Find all tick peaks (major and minor together)
-    all_peaks, all_heights = _find_peaks(projection, min_distance=15)
+    all_peaks, all_heights = _find_peaks(projection, min_distance=min_distance)
 
     if len(all_peaks) < 5:
         raise ValueError(
@@ -234,7 +380,8 @@ def _find_peaks(signal: np.ndarray, min_distance: int = 15) -> tuple[list[int], 
             local_max_idx = i + int(np.argmax(signal[i:window_end]))
             peaks.append(local_max_idx)
             heights.append(float(signal[local_max_idx]))
-            i = window_end
+            # Advance past the detected peak to prevent re-detecting it
+            i = local_max_idx + min_distance
         else:
             i += 1
 
