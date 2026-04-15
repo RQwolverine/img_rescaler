@@ -317,11 +317,11 @@ def _detect_axis(
             f"(need at least 5)."
         )
 
-    # Assign cm values: first detected major peak = 0cm (the content-area boundary),
-    # second peak = 1cm, etc.
-    # The "0cm" tick IS the ruler origin — the left/top edge of the content area.
-    cm_values = np.arange(0, len(major_peaks), dtype=float)
+    # Assign cm values accounting for missing peaks (gaps in the projection).
+    # If a consecutive spacing is ~2x the median, one tick was missed; treat it as
+    # a 2cm gap rather than 1cm so the regression slope stays accurate.
     positions = np.array(major_peaks, dtype=float)
+    cm_values = _gap_aware_cm_values(major_peaks)
 
     coeffs = np.polyfit(cm_values, positions, 1)
     px_per_cm = float(coeffs[0])   # slope
@@ -331,6 +331,34 @@ def _detect_axis(
         raise ValueError(f"Invalid {axis_label} px/cm ({px_per_cm:.2f}).")
 
     return px_per_cm, origin
+
+
+def _gap_aware_cm_values(peaks: list[int]) -> np.ndarray:
+    """
+    Assign integer cm-index values to detected peak positions, compensating for
+    missing peaks.
+
+    When a tick mark is missed (e.g. due to low contrast in the narrow ruler strip),
+    the spacing between two consecutive detected peaks is ~2× the median spacing.
+    Assigning it 2 cm-units (instead of 1) keeps the linear-regression slope
+    accurate and prevents px_per_cm from being inflated.
+
+    Uses round(gap / median_gap) so it handles any number of consecutive missed ticks.
+    """
+    if len(peaks) < 2:
+        return np.arange(len(peaks), dtype=float)
+
+    spacings = [peaks[i + 1] - peaks[i] for i in range(len(peaks) - 1)]
+    median_sp = float(np.median(spacings))
+
+    cm_vals: list[float] = [0.0]
+    current = 0.0
+    for sp in spacings:
+        n_units = max(1, round(sp / median_sp))
+        current += n_units
+        cm_vals.append(current)
+
+    return np.array(cm_vals, dtype=float)
 
 
 def _filter_major_ticks(peaks: list[int], peak_heights: list[float]) -> list[int]:
